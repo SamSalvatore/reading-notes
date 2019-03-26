@@ -259,6 +259,310 @@ notify():可以唤醒等待队列中的第一个等待同一个共享资源的�
 
 notifyAll：唤醒所有正在等待同一个资源的线程
 
+# 第2节  日期类
+
+> Date类 Calendar类 DateFormat类 SimpleDateFormat类
+
+## 2.1 Date类
+
+Date类是较早处理时间对象的类，现在其大部分功能已经被Calendar取代，下面是这个类的几个比较常用的方法
+
+boolean after（Date when）:测试此日期是否在指定日期之后
+
+boelan before（Date when）:测试此日期是否在指定日期之前
+
+Object clone（）：返回此对象副本
+
+int compareTo（Date anotherDate）：比较两个日期的顺序如果参数Date==此Date则返回0
+
+​											参数Date在此Date之前返回值小于0
+
+​											参数Date在此Date之后返回值大于0
+
+boolean equals 比较两个日期的相等性
+
+long getTime：返回从1970年1月1日 00:00:00 依赖的Date对象表示的毫秒数
+
+void setTime（long time）
+
+Strng toString（）把此对象转换为字符串形式
+
+下面我们使用一个类来练习这些方法的使用
+
+```java
+import java.util.Date;
+
+public class DateText {
+	public static void main(String [] args){
+		//声明一个类对象
+		Date date1=new Date();
+		//克隆对象
+		Date date2=(Date)date1.clone();
+		//设置date2对象
+		date2.setTime(1555328566);
+		//比较时间的前后
+		System.out.println(date1.after(date2));
+		System.out.println(date1.before(date2));
+		//得到时间
+		System.out.println(date2.getTime());
+		String s=date1.toString();
+		System.out.println(s);
+		
+	}
+}
+```
+
+## 2.2  Calendar
+
+在jdk1.1以后就推荐使用Calendar类，这个类要比Date类强大很多
+
+Calendar类是一个抽象类类（这里要联想到一个知识点就是抽象类和接口一样都不能实例化）
+
+Calendar没有公共的构造方法，得到Calender类的写法是：
+
+'Calendar c=Calendar.getInstrance()'
+
+------
+
+这里跑题一下，我们来想一个问题，既然我们知道Calendar类是一个抽象类，他又号称给我们提供了一个类似于懒汉模式的声明对象的方法，可是不管用什么模式他都不能实例化呀，那就让我们来看看源码
+
+首先我们要看getInstrance的源码：
+
+```java
+public static Calendar getInstance(){ 
+    return createCalendar(TimeZone.getDefault(),Locale.getDefault(Locale.Category.FORMAT)); 
+} 
+public static Calendar getInstance(TimeZone zone){ 
+      return createCalendar(zone,Locale.getDefault(Locale.Category.FORMAT)); 
+  } 
+public static Calendar getInstance(Locale aLocale){ 
+    return createCalendar(TimeZone.getDefault(),aLocale); 
+} 
+public static Calendar getInstance(TimeZone zone,Locale aLocale){ 
+    return createCalendar(zone,aLocale); 
+}
+```
+
+这个方法有四个重载，大概都是需要提供时区和地区的参数，这个我们先不管，因为即使我们不写JVM也会把我们用的电脑里面的信息告诉他。这四个重载方法把我们的线索指到了createCalendar这个方法，我们接下来看看这个方法的源码
+
+```java
+private static Calendar createCalendar(TimeZone zone, Locale aLocale){ 
+CalendarProvider provider = LocaleProviderAdapter .getAdapter(CalendarProvider.class, aLocale) .getCalendarProvider(); 
+if (provider != null) { 
+try { return provider.getInstance(zone, aLocale); 
+} catch (IllegalArgumentException iae) 
+{ // fall back to the default instantiation } 
+} 
+Calendar cal = null; 
+if (aLocale.hasExtensions()) {
+String caltype = aLocale.getUnicodeLocaleType("ca"); 
+if (caltype != null) { 
+switch (caltype) {
+case "buddhist": cal = new BuddhistCalendar(zone, aLocale); 
+break; case "japanese": cal = new JapaneseImperialCalendar(zone, aLocale); 
+break; case "gregory": cal = new GregorianCalendar(zone, aLocale); break; } 
+} 
+} if (cal == null) { 
+// If no known calendar type is explicitly specified, 
+// perform the traditional way to create a Calendar: 
+// create a BuddhistCalendar for th_TH locale, 
+// a JapaneseImperialCalendar for ja_JP_JP locale, or 
+// a GregorianCalendar for any other locales.
+// NOTE: The language, 
+ //前面的磨磨唧唧不用管其实还是在讨论时区地区巴拉巴拉的，我们可以看new后面的东西
+  
+country and variant strings are interned. if (aLocale.getLanguage() == "th" && aLocale.getCountry() == "TH") { cal = new BuddhistCalendar(zone, aLocale);
+} else if (aLocale.getVariant() == "JP" && aLocale.getLanguage() == "ja" && aLocale.getCountry() == "JP") { 
+    cal = new JapaneseImperialCalendar(zone, aLocale); }
+else { 
+    cal = new GregorianCalendar(zone, aLocale); } 
+} 
+    return cal;
+}
+
+```
+
+
+
+通过对new后面的代码的分析，我们终于找到了问题的答案，其实他是找了好多不同的子类apaneseImperialCalendar、BuddhistCalendar、GregorianCalendar来新建的对象
+
+跑题结束
+
+------
+
+### 使用Calendar类代表指定的时间
+
+public final void set(int year,int mouth,int date)
+
+这里要注意语法值为实际的月份减去1，比如我们要设定3月 这里就输入个2就行
+
+public void set（int field，int value）
+
+field为要设置字段的类型，常见的类型为：
+
+Calendar.TEAR  年份
+
+Calendar.MONTH 月份
+
+Calendar.DATE 日期
+
+Calendar.DAY_OF_MONTH 日期 与上面的完全相同
+
+Calendar.HOUR 12小时的小时数
+
+Calendar.HOUR_OF_DAY 24小时制的小时数
+
+Calendar.MINUTE 分钟
+
+Calendar.SECOND 秒
+
+Calendar.DAY_OF_WEEK 星期几
+
+### 获得Calendar类中的信息
+
+就是使用get方法
+
+int year=calendar.get(Calendar.YEAR)
+
+别的参数类似
+
+要注意周日是1 周一是2 以此类推
+
+### add方法
+
+public  abstract void add(int field,int amout)
+
+### after方法
+
+public boolean after(Object when)
+
+### getTime()
+
+public final Date getTime()
+
+这个方法是将Calendar类型的对象转换为对应的Date类对象
+
+### setTime（）
+
+public final void setTime(Date date)
+
+将Date对象转换为Calendar对象
+
+### Calendar对象和相对时间的转换
+
+getTimeInMills（）
+
+setTimeInMills（）
+
+下面用一个例子来看看Canlendar的使用
+
+```java
+import java.util.Calendar;
+import java.util.Date;
+
+public class CalendarTest {
+public static void main(String [] args){
+	//得到对象
+	Calendar c1=Calendar.getInstance();
+	Calendar c2=Calendar.getInstance();
+	//设置时间
+	c2.set(Calendar.YEAR, 2018);
+	//得到时间
+	System.out.println(c2.get(Calendar.YEAR));
+	//和日期的相互转换
+	Date date=c1.getTime();
+	Calendar c3=Calendar.getInstance();
+	c3.setTime(date);
+	//和秒数的相互转换
+	long l1=c3.getTimeInMillis();
+	c3.setTimeInMillis(l1);
+	
+	
+}
+}
+```
+
+## 2.3 DateFormat类
+
+对于时间我们需要多种个性化的格式，为了避免时间格式的单一性java为我们提供了DateFormat类来方便我们对时间的格式个性化设置。
+
+DateFormat是一个抽象类，实例化这个类的时候不能用new而是通过工厂类，这个的具体实现方法应该跟我们前文中分析的一样。
+
+DateFormat df=DateFormat.getDateInstrance
+
+### format和parse
+
+format意思为格式化
+
+parse意思为解析
+
+通过字面意思就可以想象的到format是将Date对象转换为一个字符串，即对时间的格式化输出
+
+parse方法是将字符串解析为Date对象
+
+具体的解析和转换格式在声明DateFormat对象时可以写入或者使用applyPattern方法
+
+## SimpleDateFormat类
+
+SimpleDateFormat类是DateFormat很常用的子类
+
+```java
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class DateFormat01 {
+public static void main(String [] args){
+	SimpleDateFormat sdf=new SimpleDateFormat();
+	sdf.applyPattern("yyyy-dd-MM");
+	Date date=new Date();
+	System.out.println(date);
+	String s=sdf.format(date);
+	System.out.println(s);
+	Date date2;
+	try {
+		date2 = sdf.parse("2019-25-3");
+		System.out.println(date2);
+	} catch (ParseException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}	
+}
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ​		
