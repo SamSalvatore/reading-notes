@@ -84,3 +84,166 @@ git commit --amend
 
 #### 取消暂存的文件
 
+
+
+
+## 第三章 Git分支
+ 
+### 3.3 Git分支-分支管理
+**git branch**: 得到当前所有分支的一个列表。其中的`*`代表现在检出的那个分支（也就是说，当前`HEAD`指针所指向的分支）。
+ 
+```
+$ git branch
+issue53
+*master
+testing
+```
+
+**git branch -v**:查看每一个分支的最后一次提交。
+
+```
+$ git branch -v
+  iss53   93b412c fix javascript issue
+* master  7a98805 Merge branch 'iss53'
+  testing 782fd34 add scott to the author list in the readmes
+```
+**git branch --merged**: 显示已经合并到当前分支的分支。
+
+```
+## 假设之前已经合并过issue分支，没有合并过testing分支
+$ git branch --merged
+  iss53
+* master
+```
+**git branch --unmerged**: 显示没有合并到当前分支的分支
+
+```
+$ git branch --no-merged
+  testing
+```
+
+### 3.4 Git-分支开发工作流
+
+
+### 3.5 Git-远程分支
+
+#### 远程分支
+远程跟踪分支是远程分支状态的引用。 它们是你不能移动的本地引用，当你做任何网络通信操作时，它们会自动移动。 远程跟踪分支像是你上次连接到远程仓库时，那些分支所处状态的书签。
+
+假设你的网络里有一个在 git.ourcompany.com 的 Git 服务器。 如果你从这里克隆，Git 的 clone 命令会为你自动将其命名为 origin，拉取它的所有数据，创建一个指向它的 master 分支的指针，并且在本地将其命名为 origin/master。 Git 也会给你一个与 origin 的 master 分支在指向同一个地方的本地 master 分支，这样你就有工作的基础。
+
+“origin” 并无特殊含义
+远程仓库名字 “origin” 与分支名字 “master” 一样，在 Git 中并没有任何特别的含义一样。 同时 “master” 是当你运行 git init 时默认的起始分支名字，原因仅仅是它的广泛使用，“origin” 是当你运行 git clone 时默认的远程仓库名字。 如果你运行
+
+```
+ git clone -o booyah
+```
+ 
+那么你默认的远程分支名字将会是 booyah/master。
+
+#### 推送
+#### 跟踪分支
+跟踪分支是与远程分支有直接关系的本地分支。从一个远程跟踪分支检出一个本地分支会自动创建所谓的 “跟踪分支”（它跟踪的分支叫做 “上游分支”）。 
+
+设置已有的本地分支跟踪一个刚刚拉取下来的远程分支，或者想要修改正在跟踪的上游分支，你可以在任意时间使用 `-u` 或` --set-upstream-to` 选项运行 git branch 来显式地设置。
+
+```
+$ git branch -u origin/serverfix
+Branch serverfix set up to track remote branch serverfix from origin.
+```
+
+**git branch --vv：**将所有的本地分支列出来并且包含更多的信息，如每一个分支正在跟踪哪个远程分支与本地分支是否是领先、落后或是都有。
+
+```
+$ git branch -vv
+  iss53     7e424c3 [origin/iss53: ahead 2] forgot the brackets
+  master    1ae2a45 [origin/master] deploying index fix
+* serverfix f8674d9 [teamone/server-fix-good: ahead 3, behind 1] this should do it
+  testing   5ea463a trying something new
+```
+
+需要重点注意的一点是这些数字的值来自于你从每个服务器上最后一次抓取的数据。 这个命令并没有连接服务器，它只会告诉你关于本地缓存的服务器数据。 如果想要统计最新的领先与落后数字，需要在运行此命令前抓取所有的远程仓库。 可以像这样做：
+```
+$ git fetch --all; 
+git branch -vv
+```
+
+#### 拉取
+`git fetch`命令从服务器上抓取本地没有的数据时，它并不会修改工作目录中的内容。它只会获取数据然后让你自己合并。
+
+`git pull` = `git fetch` + `git merge`.
+
+由于 git pull 的魔法经常令人困惑所以通常单独显式地使用 fetch 与 merge 命令会更好一些。
+
+#### 删除远程分支
+```
+$ git push origin --delete serverfix
+To https://github.com/schacon/simplegit
+ - [deleted]         serverfix
+```
+
+## 3.6 变基
+#### git rebase [basebranch] [topicbranch] 
+![](https://it-learn.oss-cn-beijing.aliyuncs.com/github/reading-notes/basic-rebase-1.png)
+合并分支的两种做法：
+* git merge:将两个分支的最新快照（C3和C4）以及二者最近的共同祖先（C2）进行合并，合并的结果是生成一个新的快照（并提交）。
+
+![](https://it-learn.oss-cn-beijing.aliyuncs.com/github/reading-notes/basic-rebase-2.png)
+
+* git rebase：提取在 C4 中引入的补丁和修改，然后在 C3 的基础上应用一次。 
+![](https://it-learn.oss-cn-beijing.aliyuncs.com/github/reading-notes/basic-rebase-3.png)
+
+在 Git 中，这种操作就叫做 变基。 你可以使用 rebase 命令将提交到某一分支上的所有修改都移至另一分支上，就好像“重新播放”一样。
+
+运行如下代码，他的原理为：
+1. 首先找到这两个分支（即当前分支 experiment、变基操作的目标基底分支 master）的最近共同祖先 C2
+2. 对比当前分支相对于该祖先的历次提交，提取相应的修改并存为临时文件
+3. 将当前分支指向目标基底 C3, 最后以此将之前另存为临时文件的修改依序应用。（译注：写明了 commit id，以便理解，下同）
+
+```
+$ git checkout experiment
+$ git rebase master
+First, rewinding head to replay your work on top of it...
+Applying: added staged command
+```
+
+现在回到master分支，进行一次快进合并：
+
+```
+$ git checkout master
+$ git merge experiment
+```
+
+![](https://it-learn.oss-cn-beijing.aliyuncs.com/github/reading-notes/basic-rebase-4.png)
+
+#### git rebase --onto
+![](https://it-learn.oss-cn-beijing.aliyuncs.com/github/reading-notes/interesting-rebase-1.png)
+
+假设你希望将 client 中的修改合并到主分支并发布，但暂时并不想合并 server 中的修改，因为它们还需要经过更全面的测试。 这时，你就可以使用 git rebase 命令的 --onto 选项，选中在 client 分支里但不在 server 分支里的修改（即 C8 和 C9），将它们在 master 分支上重放：
+
+```
+$ git rebase --onto master server client
+```
+以上命令的意思是：“取出 client 分支，找出处于 client 分支和 server 分支的共同祖先之后的修改，然后把它们在 master 分支上重放一遍”。 
+![](https://it-learn.oss-cn-beijing.aliyuncs.com/github/reading-notes/interesting-rebase-2.png)
+
+现在可以快进合并 master 分支了。（如图 快进合并 master 分支，使之包含来自 client 分支的修改）：
+
+```
+$ git checkout master
+$ git merge client
+```
+![](https://it-learn.oss-cn-beijing.aliyuncs.com/github/reading-notes/interesting-rebase-3.png)
+
+接下来你决定将server分支中的修改也整合进来。使用`git rebase [baseBranch] [topicBranch]`命令可以直接将特性分支（即本例中的server）变基到目标分支（即master）上。这样做能省去你先切换到 server 分支，再对其执行变基命令的多个步骤。
+```
+git rebase master server 
+```
+如图 将 server 中的修改变基到 master 上 所示，server 中的代码被“续”到了 master 后面。
+![](https://it-learn.oss-cn-beijing.aliyuncs.com/github/reading-notes/interesting-rebase-4.png)
+
+然后就可以快进合并主分支master了。
+```
+$ git checkout master
+$ git merge server
+```
