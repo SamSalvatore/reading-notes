@@ -209,4 +209,80 @@ SELECT cust_id, count(*) AS orders FROM orders GROUP BY cust_id HAVING COUNT(*) 
 WHERE orders.cust_id = customers.cust_id
 ```
 这种类型的子查询称为**相关子查询**。任何时候只要列名可能有多义性，就必须使用这种语法（表明和列名由一个句点分隔）。
+
 ## 第15章 联结表
+> 相同数据出现多次绝不是一件好事，此因素是关系数据库设计的基础。关系表的设计就是要保证把信息分解成多个表，一类数据一个表。各表通过某些常用的值（即关系设计中的关系互相关联。
+
+外键： 外键为某个表中的一列，它包含另一个表的主键值，定义了两个表之间的关系。
+
+### 什么是联结？
+* 联结是一种机制，用来在一条SELECT语句中关联表，因此称之为联结。使用特殊的语法，可以联结多个表返回一组输出，联结在运行时关联表中正确的行。
+
+创建连接
+```sql
+SELECT vend_name, prod_name, prod_price FROM vendors, products where vendors.vend_id = products.vend_id ORDER BY vend_name, prod_name;
+```
+### 内部连接
+内部连接又称为等值连接（equijoin），它基于两个表之间的相等测试。
+上述的SQL也可以写成如下形式：
+
+```sql
+SELECT vend_name, prod_name, prod_price FROM vendors INNER JOIN products ON vendors.vend_id = products.vend_id;
+```
+在使用这种语法时，联结条件用特定的`ON`子句而不是`WHERE`子句给出。传递给`ON`的实际条件与传递给`WHERE`的相同。
+
+>使用哪种语法:ANSI SQL规范**首选`INNER JOIN`语法**。此外，尽管使用WHERE子句定义联结的确比较简单，但是使用明确的联结语法能够确保不会忘记联结条件，有时候这样做也能影响性能。
+
+>MySQL在运行时关联指定的每个表以处理联结。 这种处理可能是非常耗费资源的，因此应该仔细，不要联结不必要的表。**联结的表越多，性能下降越厉害。 **
+
+## 第16章 创建高级联结
+### 使用表别名
+别名除了用于**列名**和**计算字段**外，SQL还允许给表名起别名。这样做有两个主要理由：
+* 缩短SQL语句
+* 允许在单条SELECT语句中多次使用相同的表
+
+表别名只在查询执行中使用。与列别名不一样，表别名不返回到客户机。
+
+### 自联结
+子查询
+```sql
+SELECT prod_id, prod_name FROM products WHERE vend_id = (
+    SELECT vend_id FROM products WHERE prod_id = 'DTNTR'
+);
+```
+
+自联结
+```sql
+SELECT p1.prod_id, p1.prod_name FROM products AS p1, products AS p2 WHERE p1.vend_id = p2.vend_id AND p2.prod_id = 'DTNTR';
+```
+> 用自联结而不用子查询 :自联结通常作为外部语句用来替代从相同表中检索数据时使用的子查询语句。虽然最终的结果是相同的，但有时候处理联结远比处理子查询快得多。应该试一下两种方法，以确定哪一种的性能更好 
+
+### 自然联结
+无论何时对表进行联结，应该至少有一个列出现在不止一个表中（被 联结的列）。标准的联结（前一章中介绍的内部联结）返回所有数据，甚至相同的列多次出现。自然联结排除多次出现，使每个列只返回一次。怎样完成这项工作呢？答案是，系统不完成这项工作，由你自己完成它。自然联结是这样一种联结，其中你只能选择那些唯一的列。这一般是通过对表使用通配符（SELECT *），对所有其他表的列使用明确的子集来完成的。下面举一个例子
+```sql
+SELECT c.*, o.order_num, o.order_date,oi.prod_id, o1.quantity, o2.item_price 
+FROM customers AS c, orders as o, orderitems as oi 
+WHERE c.cust_id = o.cust_id
+AND oi.order_num = o.order_num
+AND prod_id = 'FB';
+```
+
+### 外部联结
+背景：
+许多联结将一个表中的行与另一个表中的行相关联。但有时候会需要包含没有关联行的那些行。例如：计算平均销售规模，包括那些至今尚未下订单的客户。
+
+**内部连接**
+```sql
+SELECT customes.cust_id, orders.order_num FROM customers INNER JOIN orders ON customers.cust_id = orders.cust_id;
+```
+
+外部联结
+```sql
+SELECT customes.cust_id, orders.order_num FROM customers LEFT OUTER JOIN orders ON customers.cust_id = orders.cust_id;
+```
+
+与内部联结关联两个表中的行不同的是，**外部联结还包括没有关联行的行**。在使用`OUTER JOIN`语法时，必须使用`RIGHT`或`LEFT`关键字指定包括其所有行的表.
+上面的例子使用`LEFT OUTER JOIN`从FROM子句的左边表（customers表）中选择**所有行**。为了从右边的表中选择所 有行，应该使用`RIGHT OUTER JOIN`
+
+
+>`left outer join`就是以左表当做基础，同时取右表和左表相同的行.即`LEFT OUTER JOIN`的功能就是将LEFT左边的表中的所有记录全部保留
