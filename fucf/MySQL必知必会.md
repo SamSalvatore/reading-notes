@@ -286,3 +286,78 @@ SELECT customes.cust_id, orders.order_num FROM customers LEFT OUTER JOIN orders 
 
 
 >`left outer join`就是以左表当做基础，同时取右表和左表相同的行.即`LEFT OUTER JOIN`的功能就是将LEFT左边的表中的所有记录全部保留
+
+## 第17章 组合查询
+### 组合查询（复合查询）概念：
+MySQL允许执行多个查询（多条SELECT语句），并将结果作为单个查询结果集返回。这些组合查询通常称为并（union）或复合查询（compound query）
+
+### 创建组合查询
+可用`UNION`操作符来组合数条`SQL`查询。利用`UNION`，可给出多条`SELECT`语句，将它们的结果组合成单个结果集。
+
+`UNION`的使用很简单。所需做的只是给出每条`SELECT`语句，在各条语句之间放上关键字`UNION`。
+
+![-w1228](https://it-learn-1259257911.cos.ap-beijing.myqcloud.com/2019/10/02/15700270933777.jpg)
+
+
+### UNION规则
+* UNION必须由两条或两条以上的SELECT语句组成，语句之间用关键字UNION分隔
+* UNION中的每个查询必须包含相同的列、表达式或聚集函数（不过各个列不需要以相同的次序列出）。
+* 列数据类型必须兼容：类型不必完全相同，但必须是DBMS可以隐含地转换的类型（例如，不同的数值类型或不同的日期类型）。
+
+### 包含或取消重复的行
+`UNION`默认从查询结果集中自动去除重复的行。如果想返回所有匹配行，可使用`UNION ALL`而不是`UNION`
+
+### 对组合查询结果排序
+`SELECT`语句的输出用`ORDER BY`子句排序。在用`UNION`组合查询时，只能使用一条`ORDER BY`子句，它必须出现在最后一条`SELECT`语句之后。对于结果集，不存在用一种方式排序一部分，而又用另一种方式排序另一部分的情况，因此**不允许使用多条`ORDER BY`子句。**
+
+## 第18章 全文本搜索
+* MyISAM支持全文本搜索，而InnoDB不支持。
+
+LIKE通配符匹配和正则表达式匹配的限制：
+* 性能-- 通配符和正则表达式匹配通常要求MySQL尝试匹配表中所有行。由于被搜索行数不断增加，这些搜索可能非常耗时。
+* 明确控制-- 使用通配符和正则表达式匹配，很难（而且并不总是能）明确地控制匹配什么和不匹配什么
+* 智能化的结果—— 虽然基于通配符和正则表达式的搜索提供了非常灵活的搜索，但它们都不能提供一种智能化的选择结果的方法。
+
+### 使用全文本搜索
+为了进行全文本搜索，必须索引被搜索的列，而且要随着数据的改变不断地重新索引。在对表列进行适当设计后，MySQL会自动进行所有的索引和重新索引。
+在索引之后，`SELECT`可与`Match()`和`Against()`一起使用以实际执行搜索。
+
+## 第19章 插入数据
+### 插入完整的行
+```sql
+INSERT INTO Customers 
+VALUES(...)
+```
+>虽然这种语法很简单，但并不安全，应该尽量避免使用。
+
+```sql
+INSERT INTO 表名（column1, column2...）
+VALUES(value1, value2...)
+```
+
+### 插入多个行
+```sql
+INSERT INTO 表名（column1, column2...）
+VALUES(value1, value2...);
+INSERT INTO 表名（column1, column2...）
+VALUES(value1, value2...);
+```
+
+OR
+```sql
+INSERT INTO 表名（column1, column2...）
+VALUES(value1, value2...),
+（column1, column2...）,
+VALUES(value1, value2...);
+```
+其中单条INSERT语句有多组值，每组值用一对圆括号括起来，用逗号分隔。
+>MySQL用单条INSERT语句处理多个插入比使用多条INSERT语句快。 
+
+### 插入检索出的数据
+`INSERT SELECT`:将一条`SELECT`语句的结果插入表中。顾名思义，它是由一条`INSERT`语句和一条`SELECT`语句组成的。
+```sql
+INSERT INTO customers(cust_id, cust_contact)
+SELECT cust_id, cust_contact FROM custnew;
+```
+
+为简单起见，这个例子在INSERT和INSERT SELECT语句中使用了相同的列名。但是，不一定要求列名匹配。此SELECT中的第一列（不管其列名）将用来填充表列中指定的第一个列，第二列将用来填充表列中指定的第二个列，如此等等。
