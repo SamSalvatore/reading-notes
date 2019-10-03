@@ -361,3 +361,234 @@ SELECT cust_id, cust_contact FROM custnew;
 ```
 
 为简单起见，这个例子在INSERT和INSERT SELECT语句中使用了相同的列名。但是，不一定要求列名匹配。此SELECT中的第一列（不管其列名）将用来填充表列中指定的第一个列，第二列将用来填充表列中指定的第二个列，如此等等。
+
+## 第20章 更新和删除数据
+
+### 更新数据
+IGNORE关键字 
+如果用UPDATE语句更新多行，并且在更新这些 行中的一行或多行时出一个现错误，则整个UPDATE操作被取消（错误发生前更新的所有行被恢复到它们原来的值）。为即使是发 
+生错误，也继续进行更新，可使用IGNORE关键字，如下所示： 
+```sql
+UPDATE IGNORE customers… 
+```
+
+### 删除数据
+从表中删除一行
+```sql
+DELETE FROM customers WHERE cust_id = 10006;
+```
+
+注意:
+DELETE 不需要列名或通配符。DELETE删除整行而不是删除列。
+
+### UPDATE 或 DELETE 遵循的习惯
+* 除非确实打算更新和删除每一行，否则绝对不要使用不带`WHERE`字句的`UPDATE`或`DELETE`语句。
+* `UPDATE`或`DELETE`前，先用`SELECT`进行测试，保证它过滤的是正确的记录。
+* 操作前先`BEGIN`
+* 保证每个表都有主键。
+* 使用强制实施引用完整性的数据库。
+
+## 第21章 创建和操纵表
+
+### 创建表
+* 新表的名字，在关键字`CREATE TABLE`之后给出
+* 表列的名字和定义，用逗号分隔
+
+**主键和NULL值**
+主键为其值唯一标识表中每个 行的列。主键中只能使用不允许NULL值的列。允许NULL值的 列不能作为唯一标识。 
+
+每个表只允许一个`AUTO_INCREMENT`列，而且它必须被索引（如，通过使它成为主键）
+
+MySQL不允许使用函数作为默认值，它只支持常量。
+
+### SELECT last_insert_id()
+此语句返回最后一个AUTO_INCREMENT值。
+
+### 常用引擎
+* InnoDB是一个可靠的事务处理引擎，它不支持全文本搜索
+* MEMORY在功能等同于MyISAM。但由于数据存储在内存（不是硬盘）中，速度很快。
+* MyISAM是一个性能极高的引擎，它支持全文本搜索，但不支持事务处理。
+
+### 更新表
+为更新表定义，可使用`ALTER TABLE`语句。
+
+ALTER TABLE需要给出下面的信息
+* 在ALTER TABLE之后给出要改的表名
+* 索要更改的列表
+
+### 删除表
+```
+DROP TABLE tableName
+```
+
+### 重命名表
+```sql
+RENAME TABLE oldtableName TO  newTableName
+```
+
+## 第22章 使用视图
+### 视图的一些常见应用。
+* 重用SQL语句。 
+* 简化复杂的SQL操作。在编写查询后，可以方便地重用它而不必知道它的基本查询细节。 
+* 使用表的组成部分而不是整个表。 
+* 保护数据。可以给用户授予表的特定部分的访问权限而不是整个表的访问权限。
+*  更改数据格式和表示。视图可返回与底层表的表示和格式不同的数据。
+
+> 视图仅仅是用来查看存储在别处的数据的一种设施。 视图本身不包含数据，因此它们返回的数据是从其他表中检索出来的。 在添加或更改这些表中的数据时，视图将返回改变过的数据。
+
+### 使用视图
+![-w849](https://it-learn-1259257911.cos.ap-beijing.myqcloud.com/2019/10/03/15700700477530.jpg)
+
+
+### 视图缺点
+* 存储过程带来的好处，远远不如写在代码方便，可能是公司业务中数据库由DBA负责，或者排查代码不方便，导致的偷懒什么的，你自己体会吧 (转自知乎)
+* mysql的视图不是一种物化视图，它相当于一个虚拟表，本身并不存储数据，当sql在操作视图时所有数据都是从其他表中查出来的。这带来的问题是使用视图并不能将常用数据分离出来，优化查询速度。且操作视图的很多命令都与普通表一样，这会导致在业务代码中无法通过sql区分表和视图，使代码变得复杂。实
+
+## 第23章 使用存储过程
+## 第24章 使用游标
+## 第25章 使用触发器
+## 第26章 管理事务处理
+
+### START TRANSACTION
+MySQL使用下面的语句来标识事务的开始
+```sql
+START TRANSACTION
+```
+
+### ROLLBACK
+MySQL的ROLLBACK命令回退 START TRANSACTION之后的所有语句
+
+
+> 事务处理用来管理INSERT、UPDATE和 
+DELETE语句。你不能回退SELECT语句。（这样做也没有什么意 
+义。）你不能回退CREATE或DROP操作。事务处理块中可以使用 
+这两条语句，但如果你执行回退，它们不会被撤销。 
+
+### commit
+```
+start transaction
+...
+commit
+```
+
+>隐含事务关闭:当COMMIT或ROLLBACK语句执行后，事务会自动关闭（将来的更改会隐含提交）。
+
+### 更改默认的提交行为
+默认的MySQL行为是自动提交所有更改。为指示MySQL不自动提交更改。需要使用以下语句:
+```sql
+SET autocommit = 0 ;
+```
+
+>autocommit标志是很对每个连接而不是服务器的
+
+## 第27章 全球化和本地化
+
+### 字符集和校对顺序
+* 字符集: 字母和符号的集合
+* 编码: 某个字符集成员的内部表示
+* 校对: 规定字符如何比较的指令
+
+常见字符集
+* ASCII字符集：基于罗马字母表的一套字符集，它采用1个字节的低7位表示字符，高位始终为0。
+* LATIN1字符集：相对于ASCII字符集做了扩展，仍然使用一个字节表示字符，但启用了高位，扩展了字符集的表示范围。
+* GBK字符集：支持中文，字符有一字节编码和两字节编码方式。
+* UTF8字符集：Unicode字符集的一种，是计算机科学领域里的一项业界标准，支持了所有国家的文字字符，utf8采用1-4个字节表示字符。
+
+校对规则(collation)：
+* 是在字符集内**用于字符比较和排序**的一套规则，比如有的规则区分大小写，有的则无视。
+
+MySQL如下确定使用什么样的字符集和校对。
+* 如果指定CHARACTER SET和COLLATE两者，则使用这些值。 
+* 如果只指定CHARACTER SET，则使用此字符集及其默认的校对（如SHOW CHARACTER SET的结果中所示）。 
+* 如果既不指定CHARACTER SET，也不指定COLLATE，则使用数据库默认。
+
+推荐 DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_unicode_ci
+
+```sql
+CREATE TABLE  `conan_english_keypoint`.`letter_background` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  ...
+   `createdTime` bigint(20) NOT NULL DEFAULT '0',
+  `updatedTime` bigint(20) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_unicode_ci
+COMMENT = '字母背景';
+```
+## 第28章 安全管理
+
+### 管理用户
+MySQL用户账号和信息存储在名为mysql的MySQL数据库中。
+需要直接访问它的时机之一是在需要获得所有用户账号列表:
+```
+use mysql;
+select user from user;
+```
+
+`mysql`数据库有一个名为`user`的表，它包含所有用户账号。`user`表有一个名为`user`的列，它存储用户登录名。
+
+### 创建用户账号
+为了创建一个新用户账号，使用`CREATE USER`语句：
+```sql
+CREATE USER ben IDENTIFIED by 'p@$$w0rd';
+```
+
+>指定散列口令:IDENTIFIED BY指定的口令为纯文本，MySQL将在保存到user表之前对其进行加密。为了作为散列值指定口令，使用IDENTIFIED BY PASSWORD。
+### 重新命名账号
+```sql
+RENAME USER ben to bforta;
+```
+
+### 删除用户账号
+```sql
+DROP USER bforta;
+```
+
+### 设置访问权限
+
+在创建用户账号后，必须接着分配访问权限。新创建的用户账号没有访 问权限。它们能登录MySQL，但不能看到数据，不能执行任何数据库操作。
+为看到赋予用户账号的权限，使用SHOW GRANTS FOR，
+```sql
+SHOW GRANTS FOR bforta;
+```
+
+### 给用户赋予某个数据库的只读权限
+```sql
+GEANR SELECT ON databaseName.* TO userName；
+```
+![-w640](https://it-learn-1259257911.cos.ap-beijing.myqcloud.com/2019/10/03/15700727891717.jpg)
+
+
+![-w869](https://it-learn-1259257911.cos.ap-beijing.myqcloud.com/2019/10/03/15700726713974.jpg)
+
+### 取消权限
+REVOKE
+
+GRANT的反操作位REVOKE。撤销特定的权限
+```sql
+REVOKE SELECT ON databaseName.* TO userName；
+```
+
+### 设置远程登录
+ ```sql
+grant all privileges on databaseName.* to userName@'%' identified by 'password' with grant option;
+
+flush privileges
+```
+### 更改口令
+为了更改用户口令，可使用SET PASSWORD语句。
+```sql
+SET PASSWORD FOR bforta  = password('new password');
+```
+
+设置自己的口令
+```sql
+SET PASSWORD  = password('new password');
+```
+
+
+## 第29章 数据库维护
+## 第30章 改善性能
+
+
